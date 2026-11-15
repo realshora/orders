@@ -84,18 +84,33 @@ nav .fab.on{background:var(--gd2)}
 .empty{text-align:center;color:var(--mu);padding:36px 10px}
 :focus-visible{outline:3px solid var(--gd);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.th{width:64px;height:64px;border-radius:18px;object-fit:cover;flex:none}
+.card .top>div small{display:block;margin-top:2px}
+.hero{width:100%;max-height:260px;object-fit:cover;border-radius:24px;margin-bottom:14px;display:block}
+.cth{width:34px;height:34px;border-radius:50%;object-fit:cover;border:1px solid var(--ln)}
+.cbar{grid-template-columns:34px 78px 1fr auto}
+.cbar .v{text-align:left;line-height:1.3}.cbar .v small{display:block;font-size:12px;color:var(--mu);font-weight:400}
+.rowe{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;background:var(--cd);border:1px solid var(--ln);border-radius:18px;padding:10px 12px;margin-bottom:8px}
+.rowe input{border:1px solid var(--ln);background:var(--cr);border-radius:12px;padding:9px;font-weight:700;width:100%;margin-bottom:2px}
+.rep{width:100%;border-radius:20px;border:1px solid var(--ln);display:block;margin-bottom:6px}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div id="toast" role="status"></div>
 <input type="file" id="imp" accept="application/json" hidden>
+<input type="file" id="ph" accept="image/*" hidden>
 <script src="data.js"></script>
 <script>
 const KEY='tawheed-orders-v1', $=s=>document.querySelector(s);
 const CM=[['اسود','#1c1a19'],['ابيض','#ffffff'],['كحلي','#1f2f5c'],['رمادي','#8c9096'],['رصاصي','#6b7176'],['بترولي','#1b6070'],['بيج','#d9c4a0'],['زيتي','#6d6d2e'],['زيتوني','#7d8340'],['خام','#efe5cc'],['نبيتي','#6d1d3b'],['منت','#a3dcc4'],['بني','#6a4228'],['حمصي','#c4a06a'],['احمر','#c62a2a'],['فيراني','#5f9360'],['بمبي','#f48fb1'],['كناري','#ffe14a'],['فوشيا','#d4207f'],['كشمير','#c4aa8a'],['تركواز','#17b3ae'],['لبني','#8fcaea'],['ازرق','#1f5fcf'],['زهري','#f4a9c3'],['برتقالي','#f28c28'],['جنزاري','#6f9f8c'],['فضي','#c3c7cb']];
 const DAYS=['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-let S=load(), st={tab:'home',det:null,flt:'a',q:'',add:null};
+let S=load(), P={}, st={tab:'home',det:null,flt:'a',q:'',add:null};
+const idb=()=>new Promise((ok,no)=>{const r=indexedDB.open('tawheed-photos',1);r.onupgradeneeded=()=>r.result.createObjectStore('s');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
+async function pPut(id,v){P[id]=v;try{const d=await idb();d.transaction('s','readwrite').objectStore('s').put(v,id)}catch(e){}}
+async function pDel(id){delete P[id];try{const d=await idb();d.transaction('s','readwrite').objectStore('s').delete(id)}catch(e){}}
+async function pAll(){try{const d=await idb();return await new Promise(ok=>{const m={},r=d.transaction('s').objectStore('s').openCursor();r.onsuccess=()=>{const c=r.result;if(c){m[c.key]=c.value;c.continue()}else ok(m)};r.onerror=()=>ok(m)})}catch(e){return {}}}
+function shrink(f,max){return new Promise((ok,no)=>{const u=URL.createObjectURL(f),i=new Image();i.onload=()=>{const s=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*s);c.height=Math.round(i.height*s);c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.78))};i.onerror=no;i.src=u})}
 function load(){try{const j=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(j)&&j.length)return j}catch(e){}return JSON.parse(JSON.stringify(SEED))}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 save();
@@ -108,10 +123,16 @@ const fd=d=>{if(!d)return 'بدون تاريخ';const x=dt(d);return x.toLocaleD
 const dn=d=>d?DAYS[dt(d).getDay()]:'';
 const sum=q=>Object.values(q).reduce((a,b)=>a+b,0);
 const total=o=>o.entries.reduce((a,e)=>a+sum(e.q),0);
+const cw=o=>o.cw||10;
+function ct(o,kg){const w=cw(o),k=Math.round(kg*100)/100,f=Math.floor(k/w+1e-9),r=Math.round((k-f*w)*100)/100;return{f,r,n:f+(r>0?1:0)}}
+const ctxt=(o,kg)=>{const c=ct(o,kg);return c.f+' كرتونة'+(c.r?' + '+fmt(c.r)+' كجم':'')};
+function cartons(o){const bc=byColor(o);let f=0,p=0;for(const c in bc){const x=ct(o,bc[c]);f+=x.f;if(x.r)p++}return{f,p,n:f+p}}
 const last=o=>o.entries.map(e=>e.d).filter(Boolean).sort().pop()||'';
 function byColor(o){const m={};o.colors.forEach(c=>m[c]=0);o.entries.forEach(e=>{for(const c in e.q)m[c]=(m[c]||0)+e.q[c]});return m}
-function hex(n){const p=n.split('*').map(s=>{s=s.replace(/\(\d+\)/g,'').trim();const f=CM.find(c=>s.includes(c[0]));return f?f[1]:'#cdbfae'});return p.length>1?`linear-gradient(135deg,${p[0]} 50%,${p[1]} 50%)`:p[0]}
+function hexes(n){return n.split('*').map(s=>{s=s.replace(/\(\d+\)/g,'').trim();const f=CM.find(c=>s.includes(c[0]));return f?f[1]:'#cdbfae'})}
+function hex(n){const p=hexes(n);return p.length>1?`linear-gradient(135deg,${p[0]} 50%,${p[1]} 50%)`:p[0]}
 const dot=n=>`<i class="dot" style="background:${hex(n)}"></i>`;
+const sw=(o,n,s=34)=>{const id=(o.cp||{})[n];return id&&P[id]?`<img class="cth" style="width:${s}px;height:${s}px" src="${P[id]}" alt="">`:`<i class="dot" style="background:${hex(n)};width:${Math.round(s*.6)}px;height:${Math.round(s*.6)}px;margin:auto"></i>`};
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(t._t);t._t=setTimeout(()=>t.className='',2600)}
 const num=v=>parseFloat(String(v).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[٫,،]/g,'.'));
 
@@ -125,9 +146,9 @@ function listHTML(){
   const L=S.filter(o=>o.archived==(st.flt=='z')&&(!q||(o.client+' '+o.item).toLowerCase().includes(q))).sort((a,b)=>last(b).localeCompare(last(a)));
   if(!L.length)return '<div class="empty">مفيش طلبيات هنا</div>';
   return L.map(o=>{const bc=byColor(o),t=total(o);
-    return `<article class="card" data-act="open" data-id="${o.id}"><div class="top"><div><b>${esc(o.client)}</b><small>${esc(o.item)}</small></div><div class="tot">${fmt(t)}<small>كجم</small></div></div>
+    return `<article class="card" data-act="open" data-id="${o.id}"><div class="top">${o.photo&&P[o.photo]?`<img class="th" src="${P[o.photo]}" alt="">`:''}<div style="flex:1"><b>${esc(o.client)}</b><small>${esc(o.item)}</small></div><div class="tot">${fmt(t)}<small>كجم</small></div></div>
     <div class="dots">${o.colors.slice(0,9).map(dot).join('')}${o.colors.length>9?'<small>+'+(o.colors.length-9)+'</small>':''}</div>
-    <div class="meta"><span>${o.colors.length} ألوان</span><span>آخر تسجيل ${fd(last(o))}</span></div>
+    <div class="meta"><span>${o.colors.length} ألوان، ${cartons(o).n} كرتونة</span><span>آخر تسجيل ${fd(last(o))}</span></div>
     ${o.target?`<div class="bar"><i style="width:${Math.min(100,t/o.target*100)}%"></i></div><div class="meta" style="margin-top:5px"><span>المطلوب ${fmt(o.target)} كجم</span><span>${Math.round(t/o.target*100)}%</span></div>`:''}</article>`}).join('');
 }
 function homeView(){
@@ -141,17 +162,17 @@ function homeView(){
   <input class="search" id="q" placeholder="ابحث باسم العميل أو الصنف" value="${esc(st.q)}"><div id="list">${listHTML()}</div>
   <button class="ghost" data-act="new">+ طلبية جديدة</button></main>`;
 }
-function share(o){const bc=byColor(o);return `*التوحيد إيجيبت - تقرير التجهيز*\nالعميل: ${o.client}\nالصنف: ${o.item}\nإجمالي المُجهّز: ${fmt(total(o))} كجم${o.target?` من ${fmt(o.target)} كجم`:''}\n\n`+o.colors.filter(c=>bc[c]).map(c=>`• ${c}: ${fmt(bc[c])} كجم`).join('\n')+`\n\nآخر تسجيل: ${fd(last(o))}`}
+function share(o){const bc=byColor(o),c=cartons(o);return `*التوحيد إيجيبت - تقرير التجهيز*\nالعميل: ${o.client}\nالصنف: ${o.item}\nإجمالي المُجهّز: ${fmt(total(o))} كجم${o.target?` من ${fmt(o.target)} كجم`:''}\nعدد الكراتين: ${c.n} كرتونة (وزن الكرتونة ${fmt(cw(o))} كجم)\n\n`+o.colors.filter(k=>bc[k]).map(k=>`• ${k}: ${fmt(bc[k])} كجم (${ctxt(o,bc[k])})`).join('\n')+`\n\nآخر تسجيل: ${fd(last(o))}`}
 function detailView(o){
   const bc=byColor(o),mx=Math.max(1,...Object.values(bc)),t=total(o);
   const ents=[...o.entries].sort((a,b)=>(b.d||'').localeCompare(a.d||''));
   return `<header class="hd"><button class="back" data-act="back">رجوع</button><div class="row"><img src="logo.png" alt=""><div><h1>${esc(o.client)}</h1><p>${esc(o.item)}${o.archived?' (أرشيف)':''}</p></div></div>
-  <div class="stats"><div class="stat"><b>${fmt(t)}</b><span>كجم مُجهّز</span></div><div class="stat"><b>${new Set(o.entries.map(e=>e.d)).size}</b><span>يوم تجهيز</span></div><div class="stat"><b>${o.target?Math.round(t/o.target*100)+'%':'-'}</b><span>${o.target?'من '+fmt(o.target):'المطلوب غير محدد'}</span></div></div></header>
-  <main><button class="pri" style="margin-top:0" data-act="addto" data-id="${o.id}">+ تسجيل تجهيز لهذه الطلبية</button>
-  <div class="sec">الإجمالي لكل لون</div>${o.colors.map(c=>`<div class="cbar">${dot(c)}<span>${esc(c)}</span><div class="bar"><i style="width:${bc[c]/mx*100}%"></i></div><b>${fmt(bc[c])}</b></div>`).join('')}
-  <div class="sec">التسجيلات اليومية</div>${ents.map(e=>`<div class="day"><div class="h"><b>${fd(e.d)} <span class="mut">${dn(e.d)}</span></b><span><b>${fmt(sum(e.q))}</b> <span class="mut">كجم</span></span></div><div class="chips">${Object.keys(e.q).map(c=>`<span class="chip">${dot(c)}${esc(c)} <b>${fmt(e.q[c])}</b></span>`).join('')}</div><div style="margin-top:6px"><button class="ib" data-act="edit" data-id="${o.id}" data-e="${e.id}">تعديل</button><button class="ib del" data-act="delE" data-id="${o.id}" data-e="${e.id}">حذف</button></div></div>`).join('')||'<div class="empty">لسه مفيش تسجيلات</div>'}
-  <div class="two"><button class="wa" data-act="wa" data-id="${o.id}">واتساب</button><button class="wa" data-act="copy" data-id="${o.id}">نسخ التقرير</button></div>
-  <div class="two"><button class="ghost" data-act="target" data-id="${o.id}">الكمية المطلوبة</button><button class="ghost" data-act="arch" data-id="${o.id}">${o.archived?'إرجاع للجارية':'نقل للأرشيف'}</button></div>
+  <div class="stats"><div class="stat"><b>${fmt(t)}</b><span>كجم مُجهّز</span></div><div class="stat"><b>${cartons(o).n}</b><span>كرتونة</span></div><div class="stat"><b>${o.target?Math.round(t/o.target*100)+'%':'-'}</b><span>${o.target?'من '+fmt(o.target):'المطلوب غير محدد'}</span></div></div></header>
+  <main>${o.photo&&P[o.photo]?`<img class="hero" src="${P[o.photo]}" alt="">`:''}<button class="pri" style="margin-top:0" data-act="addto" data-id="${o.id}">+ تسجيل تجهيز لهذه الطلبية</button>
+  <div class="sec">الإجمالي لكل لون</div>${o.colors.map(c=>`<div class="cbar">${sw(o,c)}<span>${esc(c)}</span><div class="bar"><i style="width:${bc[c]/mx*100}%"></i></div><div class="v"><b>${fmt(bc[c])}</b><small>${bc[c]?ctxt(o,bc[c]):''}</small></div></div>`).join('')}
+  <div class="sec">التسجيلات اليومية</div>${ents.map(e=>`<div class="day"><div class="h"><b>${fd(e.d)} <span class="mut">${dn(e.d)}</span></b><span><b>${fmt(sum(e.q))}</b> <span class="mut">كجم</span></span></div><div class="chips">${Object.keys(e.q).map(c=>`<span class="chip">${dot(c)}${esc(c)} <b>${fmt(e.q[c])}</b></span>`).join('')}</div><div style="margin-top:6px"><button class="ib" data-act="edit" data-id="${o.id}" data-e="${e.id}">تعديل الكميات</button><button class="ib del" data-act="delE" data-id="${o.id}" data-e="${e.id}">حذف</button></div></div>`).join('')||'<div class="empty">لسه مفيش تسجيلات</div>'}
+  <button class="pri" data-act="rep" data-id="${o.id}">صورة التقرير للمشاركة</button><div class="two"><button class="wa" data-act="wa" data-id="${o.id}">واتساب نص</button><button class="wa" data-act="copy" data-id="${o.id}">نسخ نص</button></div>
+  <div class="two"><button class="ghost" data-act="eo" data-id="${o.id}">تعديل الطلبية والألوان</button><button class="ghost" data-act="arch" data-id="${o.id}">${o.archived?'إرجاع للجارية':'نقل للأرشيف'}</button></div>
   <button class="ghost" style="color:var(--rd);border-color:var(--rd)" data-act="delO" data-id="${o.id}">حذف الطلبية</button></main>`;
 }
 function addView(){
@@ -160,24 +181,60 @@ function addView(){
   return head(a.eid?'تعديل تسجيل':'تسجيل تجهيز','اكتب الكمية اللي اتجهزت لكل لون')+`<main style="padding-top:20px">
   <label>الطلبية<select id="ao">${S.filter(x=>!x.archived||x.id==a.oid).map(x=>`<option value="${x.id}" ${x.id==a.oid?'selected':''}>${esc(x.client)} - ${esc(x.item)}</option>`).join('')}</select></label>
   <label>التاريخ<input type="date" id="ad" value="${a.date||''}"></label>
-  ${ex?`<div class="hint">فيه تسجيل بنفس اليوم (${fmt(sum(ex.q))} كجم)، والكميات الجديدة هتتجمع عليه.</div>`:''}
+  ${ex?`<div class="hint">فيه تسجيل بنفس اليوم (${fmt(sum(ex.q))} كجم)، والكميات الجديدة هتتجمع عليه. <button class="ib" data-act="edit" data-id="${o.id}" data-e="${ex.id}">تعديل التسجيل بدل الجمع</button></div>`:''}
   ${o.colors.map(c=>`<div class="crow">${dot(c)}<span>${esc(c)}</span><input inputmode="decimal" data-c="${esc(c)}" placeholder="0" value="${a.vals[c]??''}"><em>كجم</em></div>`).join('')}
   <button class="ghost" data-act="newc">+ لون جديد في الطلبية</button>
   <button class="pri" data-act="saveA">حفظ التجهيز</button></main>`;
 }
 function newView(){return head('طلبية جديدة')+`<main style="padding-top:20px"><label>اسم العميل<input id="nc"></label><label>الصنف (مثال: 3.2سم ليكرا)<input id="ni"></label><label>الألوان (افصل بينها بفاصلة)<input id="nl" placeholder="كحلي، اسود، بيج"></label><label>الكمية المطلوبة بالكجم (اختياري)<input id="nt" inputmode="decimal"></label><button class="pri" data-act="saveN">إنشاء الطلبية</button><button class="ghost" data-act="tab" data-t="home">إلغاء</button></main>`}
 function moreView(){return head('المزيد','نسخ احتياطي للبيانات')+`<main style="padding-top:20px"><p class="mut" style="line-height:1.8">البيانات محفوظة على الموبايل. خد نسخة احتياطية من وقت لوقت، وتقدر ترجعها على أي موبايل تاني.</p><button class="pri" data-act="exp">حفظ نسخة احتياطية</button><button class="ghost" data-act="imp">استرجاع نسخة</button><button class="ghost" style="color:var(--rd);border-color:var(--rd)" data-act="reset">إرجاع بيانات الشيت الأصلية</button></main>`}
-function render(){const v=st.det?detailView(S.find(o=>o.id==st.det)):{home:homeView,add:addView,new:newView,more:moreView}[st.tab]();$('#app').innerHTML=v+nav()}
+function editView(o){const bc=byColor(o);return `<header class="hd"><button class="back" data-act="back">رجوع</button><div class="row"><img src="logo.png" alt=""><div><h1>تعديل الطلبية</h1><p>${esc(o.client)}</p></div></div></header><main style="padding-top:18px">
+${o.photo&&P[o.photo]?`<img class="hero" src="${P[o.photo]}" alt="">`:''}
+<div class="two"><button class="wa" style="margin-top:0" data-act="pic" data-id="${o.id}" data-k="">${o.photo?'تغيير صورة الشريط':'إضافة صورة الشريط'}</button>${o.photo?`<button class="wa" style="margin-top:0;background:#f6e1dc;color:var(--rd)" data-act="unpic" data-id="${o.id}" data-k="">حذف الصورة</button>`:'<span></span>'}</div>
+<label style="margin-top:14px">العميل<input data-of="client" value="${esc(o.client)}"></label><label>الصنف<input data-of="item" value="${esc(o.item)}"></label>
+<div class="two"><label>وزن الكرتونة (كجم)<input data-of="cw" inputmode="decimal" value="${cw(o)}"></label><label>الكمية المطلوبة (كجم)<input data-of="target" inputmode="decimal" value="${o.target||''}"></label></div>
+<div class="sec">الألوان (${o.colors.length})</div>
+${o.colors.map(c=>{const has=(o.cp||{})[c]&&P[o.cp[c]];return `<div class="rowe">${sw(o,c,48)}<div><input data-cn="${esc(c)}" value="${esc(c)}"><small class="mut">${fmt(bc[c]||0)} كجم</small> <button class="ib" data-act="pic" data-id="${o.id}" data-k="${esc(c)}">${has?'تغيير الصورة':'إضافة صورة'}</button>${has?`<button class="ib del" data-act="unpic" data-id="${o.id}" data-k="${esc(c)}">حذف الصورة</button>`:''}</div><button class="ib del" data-act="delc" data-id="${o.id}" data-k="${esc(c)}">حذف اللون</button></div>`}).join('')}
+<button class="ghost" data-act="addc" data-id="${o.id}">+ إضافة لون</button><button class="pri" data-act="back">تم</button></main>`}
+function repView(o){return `<header class="hd"><button class="back" data-act="back">رجوع</button><div class="row"><img src="logo.png" alt=""><div><h1>صورة التقرير</h1><p>${esc(o.client)}</p></div></div></header><main style="padding-top:18px">${st.rurl?`<img class="rep" src="${st.rurl}" alt="">`:'<div id="rbox" class="empty">جاري تجهيز الصورة...</div>'}<div class="two"><button class="pri" data-act="rshare">مشاركة</button><button class="pri" style="background:var(--gd2)" data-act="rsave">حفظ الصورة</button></div><button class="ghost" data-act="rcopy">نسخ الصورة</button></main>`}
+async function makeRep(o){
+  try{await document.fonts.load('700 30px Tajawal')}catch(e){}
+  const W=900,pd=36,bc=byColor(o),cs=o.colors.filter(c=>bc[c]>0),L=s=>new Promise(r=>{if(!s)return r(null);const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=s});
+  const [lg,ph,...cp]=await Promise.all([L('logo.png'),L(o.photo&&P[o.photo]),...cs.map(c=>L((o.cp||{})[c]&&P[o.cp[c]]))]);
+  const H=174+(ph?400:0)+240+cs.length*96+70,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');g.direction='rtl';
+  const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
+  const cover=(i,x,y,w,h)=>{const s=Math.max(w/i.width,h/i.height),dw=i.width*s,dh=i.height*s;g.drawImage(i,x+(w-dw)/2,y+(h-dh)/2,dw,dh)};
+  const T=(s,x,y,sz,wt,col,al)=>{g.font=`${wt} ${sz}px Tajawal,sans-serif`;g.fillStyle=col;g.textAlign=al;g.fillText(s,x,y)};
+  g.fillStyle='#f7f0e6';g.fillRect(0,0,W,H);
+  const gr=g.createLinearGradient(0,0,W,150);gr.addColorStop(0,'#4a2812');gr.addColorStop(1,'#7a4a2e');g.fillStyle=gr;rr(0,-40,W,190,40);g.fill();
+  g.fillStyle='#f7f0e6';rr(W-pd-130,28,130,94,28);g.fill();if(lg)g.drawImage(lg,W-pd-115,38,100,74);
+  T('تقرير التجهيز',W-pd-150,80,44,800,'#fff','right');T('التوحيد إيجيبت',W-pd-150,118,26,500,'#e3c08a','right');
+  let y=174;
+  if(ph){g.save();rr(pd,y,W-2*pd,380,28);g.clip();cover(ph,pd,y,W-2*pd,380);g.restore();y+=400}
+  T(o.client,W-pd,y+40,46,800,'#4a2812','right');T(o.item,W-pd,y+84,28,500,'#8a7563','right');
+  const tw=(W-2*pd-28)/3,ca=cartons(o),tiles=[[fmt(total(o)),'كجم مُجهّز'],[String(ca.n),'كرتونة'],[fd(last(o)),'آخر تسجيل']];
+  tiles.forEach((t,i)=>{const x=W-pd-(i+1)*tw-i*14;g.fillStyle='#4a2812';rr(x,y+110,tw,110,24);g.fill();T(t[0],x+tw/2,y+164,40,800,'#fff','center');T(t[1],x+tw/2,y+198,22,500,'#e3c08a','center')});
+  y+=240;
+  cs.forEach((c,i)=>{g.fillStyle='#fffaf2';rr(pd,y,W-2*pd,84,24);g.fill();g.strokeStyle='#e8dccb';g.lineWidth=2;g.stroke();
+    const s=60,x=W-pd-14-s,yy=y+12;g.save();g.beginPath();g.arc(x+s/2,yy+s/2,s/2,0,7);g.clip();
+    if(cp[i])cover(cp[i],x,yy,s,s);else{const q=hexes(c);g.fillStyle=q[0];g.fillRect(x,yy,s,s);if(q[1]){g.fillStyle=q[1];g.fillRect(x+s/2,yy,s/2,s)}}
+    g.restore();g.strokeStyle='#d8c9b4';g.beginPath();g.arc(x+s/2,yy+s/2,s/2,0,7);g.stroke();
+    T(c,x-16,y+38,30,700,'#2a1a10','right');T(ctxt(o,bc[c]),x-16,y+68,22,500,'#8a7563','right');
+    T(fmt(bc[c])+' كجم',pd+24,y+54,32,800,'#4a2812','left');y+=96});
+  T('تاريخ التقرير: '+fd(today()),W/2,y+36,22,500,'#8a7563','center');
+  return new Promise(r=>cv.toBlob(r,'image/png'))}
+function render(){const v=st.rep?repView(byId(st.rep)):st.eo?editView(byId(st.eo)):st.det?detailView(byId(st.det)):{home:homeView,add:addView,new:newView,more:moreView}[st.tab]();$('#app').innerHTML=v+nav();
+  if(st.rep&&!st.rurl&&!st.gen){const id=st.rep;st.gen=1;makeRep(byId(id)).then(b=>{st.gen=0;if(st.rep!=id)return;st.blob=b;st.rurl=URL.createObjectURL(b);const r=$('#rbox');if(r)r.outerHTML=`<img class="rep" src="${st.rurl}" alt="">`}).catch(()=>{st.gen=0;toast('تعذر تجهيز الصورة',1)})}}
 function go(){render();window.scrollTo(0,0)}
 function collect(){const a=st.add;if(!a||!$('#ao'))return;a.oid=$('#ao').value;a.date=$('#ad').value;document.querySelectorAll('.crow input').forEach(i=>{if(i.value!=='')a.vals[i.dataset.c]=i.value;else delete a.vals[i.dataset.c]})}
 const byId=id=>S.find(o=>o.id==id);
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;const d=b.dataset,o=d.id&&byId(d.id);
   switch(d.act){
-    case 'tab':if(st.tab=='add'&&!st.det)collect();st.det=null;st.tab=d.t;if(d.t=='add'&&!st.add)st.add=null;go();break;
+    case 'tab':if(st.tab=='add'&&!st.det)collect();st.det=st.eo=st.rep=null;st.tab=d.t;if(d.t=='add'&&!st.add)st.add=null;go();break;
     case 'flt':st.flt=d.f;render();break;
     case 'open':st.det=d.id;go();break;
-    case 'back':st.det=null;go();break;
+    case 'back':if(st.rep||st.eo){st.rep=st.eo=null}else st.det=null;go();break;
     case 'new':st.tab='new';go();break;
     case 'addto':st.add={oid:d.id,date:today(),vals:{},eid:null};st.det=null;st.tab='add';go();break;
     case 'edit':{const en=o.entries.find(x=>x.id==d.e);st.add={oid:o.id,date:en.d||'',vals:{...en.q},eid:en.id};st.det=null;st.tab='add';go();break}
@@ -198,15 +255,31 @@ document.addEventListener('click',e=>{
     case 'saveN':{const c=$('#nc').value.trim(),it=$('#ni').value.trim(),cl=[...new Set($('#nl').value.split(/[,،\n]/).map(s=>s.trim()).filter(Boolean))],t=num($('#nt').value);
       if(!c||!cl.length)return toast('اكتب العميل وألوان الطلبية',1);
       const n={id:'o'+Date.now(),client:c,item:it,archived:false,target:t>0?t:null,colors:cl,entries:[]};S.push(n);save();st.det=n.id;go();break}
-    case 'exp':{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='tawheed-orders-backup-'+today()+'.json';a.click();toast('تم حفظ النسخة');break}
+    case 'eo':st.eo=d.id;go();break;
+    case 'rep':st.rep=d.id;st.blob=st.rurl=null;go();break;
+    case 'pic':st.pk={id:d.id,k:d.k};$('#ph').click();break;
+    case 'unpic':{const k=d.k,old=k?(o.cp||{})[k]:o.photo;if(old)pDel(old);if(k)delete o.cp[k];else o.photo=null;save();render();break}
+    case 'addc':{const n=(prompt('اسم اللون الجديد')||'').trim();if(!n)break;if(o.colors.includes(n))return toast('اللون موجود',1);o.colors.push(n);save();render();break}
+    case 'delc':{const k=d.k,kg=byColor(o)[k]||0;if(!confirm(kg?`حذف لون ${k}؟ هتتحذف كمياته (${fmt(kg)} كجم) من كل التسجيلات.`:`حذف لون ${k}؟`))break;o.colors=o.colors.filter(c=>c!=k);o.entries.forEach(en=>delete en.q[k]);o.entries=o.entries.filter(en=>Object.keys(en.q).length);if(o.cp&&o.cp[k]){pDel(o.cp[k]);delete o.cp[k]}save();render();break}
+    case 'rshare':case 'rsave':case 'rcopy':{const b=st.blob;if(!b)return toast('استنى الصورة تجهز',1);const f=new File([b],'tawheed-report.png',{type:'image/png'});
+      const dl=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tawheed-report.png';a.click()};
+      if(d.act=='rsave'){dl();toast('تم حفظ الصورة')}
+      else if(d.act=='rcopy'){try{navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(()=>toast('تم نسخ الصورة'),()=>toast('النسخ مش متاح، استخدم حفظ الصورة',1))}catch(x){toast('النسخ مش متاح، استخدم حفظ الصورة',1)}}
+      else if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f],title:'تقرير التجهيز'}).catch(()=>{});
+      else{dl();toast('اتحفظت الصورة، ابعتها من المعرض')}break}
+    case 'exp':{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({v:2,orders:S,photos:P})],{type:'application/json'}));a.download='tawheed-orders-backup-'+today()+'.json';a.click();toast('تم حفظ النسخة');break}
     case 'imp':$('#imp').click();break;
     case 'reset':if(confirm('ده هيمسح كل تعديلاتك ويرجّع بيانات الشيت الأصلية. متأكد؟')){S=JSON.parse(JSON.stringify(SEED));save();st.tab='home';go()}break;
   }
 });
 document.addEventListener('change',e=>{if(e.target.id=='ao'||e.target.id=='ad'){const a=st.add;collect();if(e.target.id=='ao')a.vals={};render()}});
 document.addEventListener('input',e=>{if(e.target.id=='q'){st.q=e.target.value;$('#list').innerHTML=listHTML()}});
-$('#imp').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!Array.isArray(j)||!j.every(o=>o.client&&Array.isArray(o.entries)))throw 0;if(confirm('هيتم استبدال البيانات الحالية بالنسخة دي. تكمل؟')){S=j;save();st.tab='home';go();toast('تم استرجاع النسخة')}}catch(x){toast('الملف مش نسخة صالحة',1)}e.target.value=''};r.readAsText(f)});
-render();
+$('#imp').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const j=JSON.parse(r.result),a=Array.isArray(j)?j:j.orders;if(!Array.isArray(a)||!a.every(o=>o.client&&Array.isArray(o.entries)))throw 0;if(confirm('هيتم استبدال البيانات الحالية بالنسخة دي. تكمل؟')){S=a;save();if(j.photos){for(const k of Object.keys(P))await pDel(k);for(const k in j.photos)await pPut(k,j.photos[k])}st.tab='home';st.det=st.eo=st.rep=null;go();toast('تم استرجاع النسخة')}}catch(x){toast('الملف مش نسخة صالحة',1)}e.target.value=''};r.readAsText(f)});
+$('#ph').addEventListener('change',async e=>{const f=e.target.files[0];e.target.value='';if(!f||!st.pk)return;const o=byId(st.pk.id),k=st.pk.k;try{const u=await shrink(f,k?520:900),id='p'+Date.now(),old=k?(o.cp||{})[k]:o.photo;await pPut(id,u);if(k){(o.cp=o.cp||{})[k]=id}else o.photo=id;if(old)pDel(old);save();render();toast('تم حفظ الصورة')}catch(x){toast('تعذر قراءة الصورة',1)}});
+document.addEventListener('change',e=>{const t=e.target,o=st.eo&&byId(st.eo);if(!o)return;
+  if(t.dataset.of){const k=t.dataset.of,v=t.value.trim();if(k=='client'||k=='item'){if(k=='client'&&!v)return toast('اسم العميل مطلوب',1);o[k]=v}else{const n=num(v);if(k=='cw')o.cw=n>0?n:null;else o.target=n>0?n:null}save();toast('تم الحفظ')}
+  else if(t.dataset.cn){const a=t.dataset.cn,b=t.value.trim();if(!b||b==a){t.value=a;return}if(o.colors.includes(b)){t.value=a;return toast('اللون ده موجود',1)}o.colors[o.colors.indexOf(a)]=b;o.entries.forEach(en=>{if(a in en.q){en.q[b]=en.q[a];delete en.q[a]}});if(o.cp&&o.cp[a]){o.cp[b]=o.cp[a];delete o.cp[a]}t.dataset.cn=b;t.closest('.rowe').querySelectorAll('[data-k]').forEach(x=>x.dataset.k=b);save();toast('تم تغيير الاسم')}});
+render();pAll().then(m=>{P=m;render()});
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
