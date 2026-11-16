@@ -187,7 +187,7 @@ function addView(){
   <button class="pri" data-act="saveA">حفظ التجهيز</button></main>`;
 }
 function newView(){return head('طلبية جديدة')+`<main style="padding-top:20px"><label>اسم العميل<input id="nc"></label><label>الصنف (مثال: 3.2سم ليكرا)<input id="ni"></label><label>الألوان (افصل بينها بفاصلة)<input id="nl" placeholder="كحلي، اسود، بيج"></label><label>الكمية المطلوبة بالكجم (اختياري)<input id="nt" inputmode="decimal"></label><button class="pri" data-act="saveN">إنشاء الطلبية</button><button class="ghost" data-act="tab" data-t="home">إلغاء</button></main>`}
-function moreView(){return head('المزيد','نسخ احتياطي للبيانات')+`<main style="padding-top:20px"><p class="mut" style="line-height:1.8">البيانات محفوظة على الموبايل. خد نسخة احتياطية من وقت لوقت، وتقدر ترجعها على أي موبايل تاني.</p><button class="pri" data-act="exp">حفظ نسخة احتياطية</button><button class="ghost" data-act="imp">استرجاع نسخة</button><button class="ghost" style="color:var(--rd);border-color:var(--rd)" data-act="reset">إرجاع بيانات الشيت الأصلية</button></main>`}
+function moreView(){return head('المزيد','نسخ احتياطي للبيانات')+`<main style="padding-top:20px"><p class="mut" style="line-height:1.8">البيانات محفوظة على الموبايل. خد نسخة احتياطية من وقت لوقت، وتقدر ترجعها على أي موبايل تاني.</p><label>الاسم اللي بيظهر في خانة "إعداد" بالتقرير<input id="pn" value="${esc(prepName())}"></label><button class="pri" data-act="exp">حفظ نسخة احتياطية</button><button class="ghost" data-act="imp">استرجاع نسخة</button><button class="ghost" style="color:var(--rd);border-color:var(--rd)" data-act="reset">إرجاع بيانات الشيت الأصلية</button></main>`}
 function editView(o){const bc=byColor(o);return `<header class="hd"><button class="back" data-act="back">رجوع</button><div class="row"><img src="logo.png" alt=""><div><h1>تعديل الطلبية</h1><p>${esc(o.client)}</p></div></div></header><main style="padding-top:18px">
 ${o.photo&&P[o.photo]?`<img class="hero" src="${P[o.photo]}" alt="">`:''}
 <div class="two"><button class="wa" style="margin-top:0" data-act="pic" data-id="${o.id}" data-k="">${o.photo?'تغيير صورة الشريط':'إضافة صورة الشريط'}</button>${o.photo?`<button class="wa" style="margin-top:0;background:#f6e1dc;color:var(--rd)" data-act="unpic" data-id="${o.id}" data-k="">حذف الصورة</button>`:'<span></span>'}</div>
@@ -196,35 +196,64 @@ ${o.photo&&P[o.photo]?`<img class="hero" src="${P[o.photo]}" alt="">`:''}
 <div class="sec">الألوان (${o.colors.length})</div>
 ${o.colors.map(c=>{const has=(o.cp||{})[c]&&P[o.cp[c]];return `<div class="rowe">${sw(o,c,48)}<div><input data-cn="${esc(c)}" value="${esc(c)}"><small class="mut">${fmt(bc[c]||0)} كجم</small> <button class="ib" data-act="pic" data-id="${o.id}" data-k="${esc(c)}">${has?'تغيير الصورة':'إضافة صورة'}</button>${has?`<button class="ib del" data-act="unpic" data-id="${o.id}" data-k="${esc(c)}">حذف الصورة</button>`:''}</div><button class="ib del" data-act="delc" data-id="${o.id}" data-k="${esc(c)}">حذف اللون</button></div>`}).join('')}
 <button class="ghost" data-act="addc" data-id="${o.id}">+ إضافة لون</button><button class="pri" data-act="back">تم</button></main>`}
-function repView(o){return `<header class="hd"><button class="back" data-act="back">رجوع</button><div class="row"><img src="logo.png" alt=""><div><h1>صورة التقرير</h1><p>${esc(o.client)}</p></div></div></header><main style="padding-top:18px">${st.rurl?`<img class="rep" src="${st.rurl}" alt="">`:'<div id="rbox" class="empty">جاري تجهيز الصورة...</div>'}<div class="two"><button class="pri" data-act="rshare">مشاركة</button><button class="pri" style="background:var(--gd2)" data-act="rsave">حفظ الصورة</button></div><button class="ghost" data-act="rcopy">نسخ الصورة</button></main>`}
+function repView(o){return `<header class="hd"><button class="back" data-act="back">رجوع</button><div class="row"><img src="logo.png" alt=""><div><h1>صورة التقرير</h1><p>${esc(o.client)}</p></div></div></header><main style="padding-top:18px">${st.rurl?`<img class="rep" src="${st.rurl}" alt="">`:'<div id="rbox" class="empty">جاري تجهيز الصورة...</div>'}<button class="pri" style="margin-top:0" data-act="rshare">مشاركة PDF (A4)</button><div class="two"><button class="wa" data-act="rpdf">حفظ PDF</button><button class="wa" data-act="rsave">حفظ كصورة</button></div></main>`}
+async function mkPdf(b){
+  const u8=new Uint8Array(await b.arrayBuffer()),enc=new TextEncoder(),parts=[],off={};let len=0;
+  const add=x=>{const a=typeof x=='string'?enc.encode(x):x;parts.push(a);len+=a.length};
+  const obj=(n,s)=>{off[n]=len;add(n+' 0 obj\n'+s+'\nendobj\n')};
+  add('%PDF-1.4\n');obj(1,'<</Type/Catalog/Pages 2 0 R>>');obj(2,'<</Type/Pages/Kids[3 0 R]/Count 1>>');
+  obj(3,'<</Type/Page/Parent 2 0 R/MediaBox[0 0 595.28 841.89]/Resources<</XObject<</I 4 0 R>>>>/Contents 5 0 R>>');
+  off[4]=len;add('4 0 obj\n<</Type/XObject/Subtype/Image/Width 1240/Height 1754/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length '+u8.length+'>>\nstream\n');add(u8);add('\nendstream\nendobj\n');
+  const c='q 595.28 0 0 841.89 0 0 cm /I Do Q';obj(5,'<</Length '+c.length+'>>\nstream\n'+c+'\nendstream');
+  const x=len;add('xref\n0 6\n0000000000 65535 f \n'+[1,2,3,4,5].map(n=>String(off[n]).padStart(10,'0')+' 00000 n \n').join('')+'trailer\n<</Size 6/Root 1 0 R>>\nstartxref\n'+x+'\n%%EOF');
+  return new Blob(parts,{type:'application/pdf'})}
+const prepName=()=>{try{return localStorage.getItem('tw-prep')||'أحمد سامح'}catch(e){return 'أحمد سامح'}};
 async function makeRep(o){
-  try{await document.fonts.load('700 30px Tajawal')}catch(e){}
-  const W=900,pd=36,bc=byColor(o),cs=o.colors.filter(c=>bc[c]>0),L=s=>new Promise(r=>{if(!s)return r(null);const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=s});
+  try{await Promise.all(['400','500','700','800'].map(w=>document.fonts.load(w+' 30px Tajawal')))}catch(e){}
+  const W=1240,H=1754,bc=byColor(o),cs=o.colors.filter(c=>bc[c]>0),n=cs.length,L=s=>new Promise(r=>{if(!s)return r(null);const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=s});
   const [lg,ph,...cp]=await Promise.all([L('logo.png'),L(o.photo&&P[o.photo]),...cs.map(c=>L((o.cp||{})[c]&&P[o.cp[c]]))]);
-  const H=174+(ph?400:0)+240+cs.length*96+70,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');g.direction='rtl';
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');g.direction='rtl';g.textBaseline='middle';
+  const DK='#4a2812',BR='#7a4a2e',GD='#c79a5a',GY='#e3c08a',CR='#f7f0e6',CD='#fffaf2',LN='#e2d5c1',MU='#8a7563';
   const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
   const cover=(i,x,y,w,h)=>{const s=Math.max(w/i.width,h/i.height),dw=i.width*s,dh=i.height*s;g.drawImage(i,x+(w-dw)/2,y+(h-dh)/2,dw,dh)};
-  const T=(s,x,y,sz,wt,col,al)=>{g.font=`${wt} ${sz}px Tajawal,sans-serif`;g.fillStyle=col;g.textAlign=al;g.fillText(s,x,y)};
-  g.fillStyle='#f7f0e6';g.fillRect(0,0,W,H);
-  const gr=g.createLinearGradient(0,0,W,150);gr.addColorStop(0,'#4a2812');gr.addColorStop(1,'#7a4a2e');g.fillStyle=gr;rr(0,-40,W,190,40);g.fill();
-  g.fillStyle='#f7f0e6';rr(W-pd-130,28,130,94,28);g.fill();if(lg)g.drawImage(lg,W-pd-115,38,100,74);
-  T('تقرير التجهيز',W-pd-150,80,44,800,'#fff','right');T('التوحيد إيجيبت',W-pd-150,118,26,500,'#e3c08a','right');
-  let y=174;
-  if(ph){g.save();rr(pd,y,W-2*pd,380,28);g.clip();cover(ph,pd,y,W-2*pd,380);g.restore();y+=400}
-  T(o.client,W-pd,y+40,46,800,'#4a2812','right');T(o.item,W-pd,y+84,28,500,'#8a7563','right');
-  const tw=(W-2*pd-28)/3,ca=cartons(o),tiles=[[fmt(total(o)),'كجم مُجهّز'],[String(ca.n),'كرتونة'],[fd(last(o)),'آخر تسجيل']];
-  tiles.forEach((t,i)=>{const x=W-pd-(i+1)*tw-i*14;g.fillStyle='#4a2812';rr(x,y+110,tw,110,24);g.fill();T(t[0],x+tw/2,y+164,40,800,'#fff','center');T(t[1],x+tw/2,y+198,22,500,'#e3c08a','center')});
-  y+=240;
-  cs.forEach((c,i)=>{g.fillStyle='#fffaf2';rr(pd,y,W-2*pd,84,24);g.fill();g.strokeStyle='#e8dccb';g.lineWidth=2;g.stroke();
-    const s=60,x=W-pd-14-s,yy=y+12;g.save();g.beginPath();g.arc(x+s/2,yy+s/2,s/2,0,7);g.clip();
-    if(cp[i])cover(cp[i],x,yy,s,s);else{const q=hexes(c);g.fillStyle=q[0];g.fillRect(x,yy,s,s);if(q[1]){g.fillStyle=q[1];g.fillRect(x+s/2,yy,s/2,s)}}
-    g.restore();g.strokeStyle='#d8c9b4';g.beginPath();g.arc(x+s/2,yy+s/2,s/2,0,7);g.stroke();
-    T(c,x-16,y+38,30,700,'#2a1a10','right');T(ctxt(o,bc[c]),x-16,y+68,22,500,'#8a7563','right');
-    T(fmt(bc[c])+' كجم',pd+24,y+54,32,800,'#4a2812','left');y+=96});
-  T('تاريخ التقرير: '+fd(today()),W/2,y+36,22,500,'#8a7563','center');
-  return new Promise(r=>cv.toBlob(r,'image/png'))}
+  const T=(s,x,y,sz,wt,col,al,mw)=>{g.font=`${wt} ${sz}px Tajawal,sans-serif`;g.fillStyle=col;g.textAlign=al;mw?g.fillText(s,x,y,mw):g.fillText(s,x,y)};
+  g.fillStyle=CR;g.fillRect(0,0,W,H);
+  const gr=g.createLinearGradient(0,0,0,500);gr.addColorStop(0,DK);gr.addColorStop(.9,BR);gr.addColorStop(1,CR);g.fillStyle=gr;g.fillRect(0,0,W,500);
+  g.fillStyle=CR;rr(W/2-80,30,160,100,34);g.fill();if(lg)g.drawImage(lg,W/2-56,38,112,83);
+  T(o.client,W/2,205,100,800,'#fff','center',W-260);
+  g.fillStyle=GD;g.fillRect(130,284,W-260,3);g.fillRect(130,358,W-260,3);
+  T('تقرير التجهيز'+(o.item?'   |   '+o.item:''),W/2,321,36,700,'#fff','center',W-260);
+  T('عدد الألوان',W-130,396,24,500,GY,'right');T(String(n),W-130,436,40,800,'#fff','right');
+  T('تاريخ التقرير',130,396,24,500,GY,'left');T(fd(today()),130,436,40,800,'#fff','left');
+  g.fillStyle=DK;rr(0,1400,W,H-1400+200,120);g.fill();
+  g.fillStyle=CD;rr(80,540,W-160,890,56);g.fill();g.strokeStyle=LN;g.lineWidth=2;g.stroke();
+  g.fillStyle=GD;rr(60,505,W-120,72,36);g.fill();
+  T('م',1090,541,30,800,DK,'center');T('اللون',1030,541,30,800,DK,'right');T('الكراتين',470,541,30,800,DK,'center');T('الكمية (كجم)',215,541,30,800,DK,'center');
+  const top=600,bot=1195,rh=Math.min(110,(bot-top)/Math.max(n,1)),s=Math.min(84,rh-20),f=Math.max(.7,Math.min(1,rh/90));
+  cs.forEach((c,i)=>{const y=top+i*rh,cy=y+rh/2,x=1030-s,yy=cy-s/2;
+    T(String(i+1),1090,cy,Math.round(34*f),700,MU,'center');
+    g.save();rr(x,yy,s,s,14);g.clip();if(cp[i])cover(cp[i],x,yy,s,s);else{const q=hexes(c);g.fillStyle=q[0];g.fillRect(x,yy,s,s);if(q[1]){g.fillStyle=q[1];g.fillRect(x+s/2,yy,s/2,s)}}g.restore();
+    g.strokeStyle='#d8c9b4';g.lineWidth=2;rr(x,yy,s,s,14);g.stroke();
+    T(c,x-20,cy,Math.round(38*f),700,'#2a1a10','right',360);
+    T(ctxt(o,bc[c]),470,cy,Math.round(30*f),500,'#6b5645','center',320);
+    T(fmt(bc[c]),215,cy,Math.round(44*f),800,DK,'center');
+    if(i<n-1){g.fillStyle=LN;g.fillRect(110,y+rh,W-220,2)}});
+  const ca=cartons(o),days=new Set(o.entries.map(e=>e.d).filter(Boolean)).size,tt=total(o);
+  T('تفاصيل الطلبية',W-120,1245,30,800,DK,'right');
+  T('وزن الكرتونة: '+fmt(cw(o))+' كجم',W-120,1292,27,500,MU,'right');
+  T('أيام التجهيز: '+days,W-120,1334,27,500,MU,'right');
+  if(o.target)T('المطلوب: '+fmt(o.target)+' كجم ('+Math.round(tt/o.target*100)+'%)',W-120,1376,27,700,DK,'right');
+  if(ph){g.save();rr(W/2-120,1235,240,165,26);g.clip();cover(ph,W/2-120,1235,240,165);g.restore()}
+  T('إجمالي الكراتين',500,1262,29,700,DK,'right');T(String(ca.n),120,1262,32,800,DK,'left');
+  g.fillStyle=LN;g.fillRect(120,1298,380,2);
+  g.fillStyle=GD;rr(110,1330,400,84,42);g.fill();T('الإجمالي',480,1372,29,800,DK,'right');T(fmt(tt)+' كجم',140,1372,34,800,DK,'left');
+  T('ملاحظات',W-110,1495,34,800,'#fff','right');
+  [`وزن الكرتونة الصافي ${fmt(cw(o))} كجم، وآخر كمية بتقفل المتاح بكرتونة جزئية.`,`آخر تسجيل ${fd(last(o))}، وعدد الكراتين ${ca.n} (${ca.f} كاملة و${ca.p} جزئية).`].forEach((t,i)=>{const y=1552+i*50;g.fillStyle=GD;g.beginPath();g.arc(W-118,y,8,0,7);g.fill();T(t,W-146,y,27,500,'#e8dccb','right',W-260)});
+  T('التوحيد إيجيبت',W-110,1700,46,800,GD,'right');
+  g.fillStyle=GY;g.fillRect(110,1655,400,2);T(prepName(),310,1690,36,700,GD,'center');T('إعداد',310,1726,24,500,'#9b8873','center');
+  return new Promise(r=>cv.toBlob(r,'image/jpeg',.93))}
 function render(){const v=st.rep?repView(byId(st.rep)):st.eo?editView(byId(st.eo)):st.det?detailView(byId(st.det)):{home:homeView,add:addView,new:newView,more:moreView}[st.tab]();$('#app').innerHTML=v+nav();
-  if(st.rep&&!st.rurl&&!st.gen){const id=st.rep;st.gen=1;makeRep(byId(id)).then(b=>{st.gen=0;if(st.rep!=id)return;st.blob=b;st.rurl=URL.createObjectURL(b);const r=$('#rbox');if(r)r.outerHTML=`<img class="rep" src="${st.rurl}" alt="">`}).catch(()=>{st.gen=0;toast('تعذر تجهيز الصورة',1)})}}
+  if(st.rep&&!st.rurl&&!st.gen){const id=st.rep;st.gen=1;makeRep(byId(id)).then(b=>{st.gen=0;if(st.rep!=id)return;st.blob=b;st.rurl=URL.createObjectURL(b);mkPdf(b).then(p=>st.pdf=p);const r=$('#rbox');if(r)r.outerHTML=`<img class="rep" src="${st.rurl}" alt="">`}).catch(()=>{st.gen=0;toast('تعذر تجهيز الصورة',1)})}}
 function go(){render();window.scrollTo(0,0)}
 function collect(){const a=st.add;if(!a||!$('#ao'))return;a.oid=$('#ao').value;a.date=$('#ad').value;document.querySelectorAll('.crow input').forEach(i=>{if(i.value!=='')a.vals[i.dataset.c]=i.value;else delete a.vals[i.dataset.c]})}
 const byId=id=>S.find(o=>o.id==id);
@@ -256,17 +285,18 @@ document.addEventListener('click',e=>{
       if(!c||!cl.length)return toast('اكتب العميل وألوان الطلبية',1);
       const n={id:'o'+Date.now(),client:c,item:it,archived:false,target:t>0?t:null,colors:cl,entries:[]};S.push(n);save();st.det=n.id;go();break}
     case 'eo':st.eo=d.id;go();break;
-    case 'rep':st.rep=d.id;st.blob=st.rurl=null;go();break;
+    case 'rep':st.rep=d.id;st.blob=st.rurl=st.pdf=null;go();break;
     case 'pic':st.pk={id:d.id,k:d.k};$('#ph').click();break;
     case 'unpic':{const k=d.k,old=k?(o.cp||{})[k]:o.photo;if(old)pDel(old);if(k)delete o.cp[k];else o.photo=null;save();render();break}
     case 'addc':{const n=(prompt('اسم اللون الجديد')||'').trim();if(!n)break;if(o.colors.includes(n))return toast('اللون موجود',1);o.colors.push(n);save();render();break}
     case 'delc':{const k=d.k,kg=byColor(o)[k]||0;if(!confirm(kg?`حذف لون ${k}؟ هتتحذف كمياته (${fmt(kg)} كجم) من كل التسجيلات.`:`حذف لون ${k}؟`))break;o.colors=o.colors.filter(c=>c!=k);o.entries.forEach(en=>delete en.q[k]);o.entries=o.entries.filter(en=>Object.keys(en.q).length);if(o.cp&&o.cp[k]){pDel(o.cp[k]);delete o.cp[k]}save();render();break}
-    case 'rshare':case 'rsave':case 'rcopy':{const b=st.blob;if(!b)return toast('استنى الصورة تجهز',1);const f=new File([b],'tawheed-report.png',{type:'image/png'});
-      const dl=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tawheed-report.png';a.click()};
-      if(d.act=='rsave'){dl();toast('تم حفظ الصورة')}
-      else if(d.act=='rcopy'){try{navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(()=>toast('تم نسخ الصورة'),()=>toast('النسخ مش متاح، استخدم حفظ الصورة',1))}catch(x){toast('النسخ مش متاح، استخدم حفظ الصورة',1)}}
-      else if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f],title:'تقرير التجهيز'}).catch(()=>{});
-      else{dl();toast('اتحفظت الصورة، ابعتها من المعرض')}break}
+    case 'rshare':case 'rpdf':case 'rsave':{const b=st.blob,r=byId(st.rep);if(!b)return toast('استنى التقرير يجهز',1);
+      const dl=(x,n)=>{const a=document.createElement('a');a.href=URL.createObjectURL(x);a.download=n;a.click()},nm='تقرير-'+r.client.replace(/[^\w\u0600-\u06FF ]/g,'').trim();
+      if(d.act=='rsave'){dl(b,nm+'.jpg');toast('تم حفظ الصورة');break}
+      const pdf=st.pdf;if(!pdf)return toast('استنى التقرير يجهز',1);
+      if(d.act=='rpdf'){dl(pdf,nm+'.pdf');toast('تم حفظ الملف');break}
+      const f=new File([pdf],nm+'.pdf',{type:'application/pdf'});
+      if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f],title:'تقرير التجهيز'}).catch(()=>{});else{dl(pdf,nm+'.pdf');toast('اتحفظ الملف، ابعته من التنزيلات')}break}
     case 'exp':{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({v:2,orders:S,photos:P})],{type:'application/json'}));a.download='tawheed-orders-backup-'+today()+'.json';a.click();toast('تم حفظ النسخة');break}
     case 'imp':$('#imp').click();break;
     case 'reset':if(confirm('ده هيمسح كل تعديلاتك ويرجّع بيانات الشيت الأصلية. متأكد؟')){S=JSON.parse(JSON.stringify(SEED));save();st.tab='home';go()}break;
@@ -279,6 +309,7 @@ $('#ph').addEventListener('change',async e=>{const f=e.target.files[0];e.target.
 document.addEventListener('change',e=>{const t=e.target,o=st.eo&&byId(st.eo);if(!o)return;
   if(t.dataset.of){const k=t.dataset.of,v=t.value.trim();if(k=='client'||k=='item'){if(k=='client'&&!v)return toast('اسم العميل مطلوب',1);o[k]=v}else{const n=num(v);if(k=='cw')o.cw=n>0?n:null;else o.target=n>0?n:null}save();toast('تم الحفظ')}
   else if(t.dataset.cn){const a=t.dataset.cn,b=t.value.trim();if(!b||b==a){t.value=a;return}if(o.colors.includes(b)){t.value=a;return toast('اللون ده موجود',1)}o.colors[o.colors.indexOf(a)]=b;o.entries.forEach(en=>{if(a in en.q){en.q[b]=en.q[a];delete en.q[a]}});if(o.cp&&o.cp[a]){o.cp[b]=o.cp[a];delete o.cp[a]}t.dataset.cn=b;t.closest('.rowe').querySelectorAll('[data-k]').forEach(x=>x.dataset.k=b);save();toast('تم تغيير الاسم')}});
+document.addEventListener('change',e=>{if(e.target.id=='pn'){try{localStorage.setItem('tw-prep',e.target.value.trim())}catch(x){}toast('تم الحفظ')}});
 render();pAll().then(m=>{P=m;render()});
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
