@@ -90,6 +90,7 @@ label>select,label>input,.f{display:block;width:100%;margin-top:8px;border:0;bac
 .ghost:active,.wa:active{box-shadow:var(--inset)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .hint{background:#f8ecd6;border-radius:18px;padding:12px 16px;font-size:13px;margin-bottom:16px;color:#6b4a14}
+.tpls{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}.tpls button{border:0;background:var(--sf);box-shadow:var(--raise-s);border-radius:16px;min-height:44px;font-weight:500}.tpls button.on{box-shadow:var(--inset);font-weight:600}
 .rep{width:100%;border-radius:24px;box-shadow:var(--raise);display:block;margin-bottom:8px}
 nav{position:fixed;inset-inline:16px;bottom:calc(12px + env(safe-area-inset-bottom,0px));background:rgba(246,240,230,.72);-webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);border:1px solid rgba(255,255,255,.7);border-radius:32px;box-shadow:0 14px 32px -12px rgba(74,40,18,.35);display:flex;justify-content:space-around;align-items:center;padding:8px 12px;z-index:5;max-width:520px;margin:0 auto}
 nav button{background:none;border:0;color:var(--mu);font-weight:500;font-size:12px;padding:8px 20px;border-radius:22px;display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -207,7 +208,7 @@ ${o.photo&&P[o.photo]?`<img class="hero" src="${P[o.photo]}" alt="">`:''}
 <div class="sec">الألوان (${o.colors.length})</div>
 ${o.colors.map(c=>{const has=(o.cp||{})[c]&&P[o.cp[c]];return `<div class="rowe">${sw(o,c,48)}<div><input data-cn="${esc(c)}" value="${esc(c)}"><small class="mut">${fmt(bc[c]||0)} كجم</small> <button class="ib" data-act="pic" data-id="${o.id}" data-k="${esc(c)}">${has?'تغيير الصورة':'إضافة صورة'}</button>${has?`<button class="ib del" data-act="unpic" data-id="${o.id}" data-k="${esc(c)}">حذف الصورة</button>`:''}</div><button class="ib del" data-act="delc" data-id="${o.id}" data-k="${esc(c)}">حذف اللون</button></div>`}).join('')}
 <button class="ghost" data-act="addc" data-id="${o.id}">+ إضافة لون</button><button class="pri" data-act="back">تم</button></main>`}
-function repView(o){return `<header class="hd"><button class="back" data-act="back">رجوع</button><div class="row"><img src="logo.png" width="64" height="47" alt=""><div><h1>صورة التقرير</h1><p>${esc(o.client)}</p></div></div></header><main style="padding-top:18px"><div class="seg"><button data-act="tpl" data-t="1" class="${st.tpl==2?'':'on'}">تصميم 1</button><button data-act="tpl" data-t="2" class="${st.tpl==2?'on':''}">تصميم 2</button></div>${st.rurl?`<img class="rep" src="${st.rurl}" alt="">`:'<div id="rbox" class="empty">جاري تجهيز الصورة…</div>'}<button class="pri" style="margin-top:0" data-act="rshare">مشاركة PDF (A4)</button><div class="two"><button class="wa" data-act="rpdf">حفظ PDF</button><button class="wa" data-act="rsave">حفظ كصورة</button></div></main>`}
+function repView(o){return `<header class="hd"><button class="back" data-act="back">رجوع</button><div class="row"><img src="logo.png" width="64" height="47" alt=""><div><h1>صورة التقرير</h1><p>${esc(o.client)}</p></div></div></header><main style="padding-top:18px">${st.rurl?`<img class="rep" src="${st.rurl}" alt="">`:'<div id="rbox" class="empty">جاري تجهيز الصورة…</div>'}<button class="pri" style="margin-top:0" data-act="rshare">مشاركة PDF (A4)</button><div class="two"><button class="wa" data-act="rpdf">حفظ PDF</button><button class="wa" data-act="rsave">حفظ كصورة</button></div></main>`}
 async function mkPdf(b){
   const u8=new Uint8Array(await b.arrayBuffer()),enc=new TextEncoder(),parts=[],off={};let len=0;
   const add=x=>{const a=typeof x=='string'?enc.encode(x):x;parts.push(a);len+=a.length};
@@ -228,6 +229,67 @@ async function makeRep(o){
   const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
   const cover=(i,x,y,w,h)=>{const s=Math.max(w/i.width,h/i.height),dw=i.width*s,dh=i.height*s;g.drawImage(i,x+(w-dw)/2,y+(h-dh)/2,dw,dh)};
   const T=(s,x,y,sz,wt,col,al,mw)=>{g.font=`${wt} ${sz}px Tajawal,sans-serif`;g.fillStyle=col;g.textAlign=al;mw?g.fillText(s,x,y,mw):g.fillText(s,x,y)};
+  if(st.tpl>=3){
+    const ca=cartons(o),tt=total(o),INK='#2a1a10',AC='#9a5f33',noteA='وزن الكرتونة الصافي '+fmt(cw(o))+' كجم، وآخر كمية بتقفل المتاح بكرتونة جزئية.';
+    const rows=c=>{const rh=Math.min(c.maxH,(c.bot-c.top)/Math.max(n,1)),f=Math.max(.7,Math.min(1,rh/90)),s=Math.min(c.maxS,rh-16);
+      cs.forEach((cl,i)=>{const y=c.top+i*rh,cy=y+rh/2,sx=c.sw.x-s,sy=cy-s/2,path=()=>{if(c.round){g.beginPath();g.arc(sx+s/2,cy,s/2,0,7)}else rr(sx,sy,s,s,14)};
+        g.save();path();g.clip();if(cp[i])cover(cp[i],sx,sy,s,s);else{const q=hexes(cl);g.fillStyle=q[0];g.fillRect(sx,sy,s,s);if(q[1]){g.fillStyle=q[1];g.fillRect(sx+s/2,sy,s/2,s)}}g.restore();
+        g.strokeStyle='rgba(60,40,20,.25)';g.lineWidth=2;path();g.stroke();
+        T(cl,sx-18,cy,Math.round(c.name.sz*f),c.name.wt,c.name.col,'right',380);
+        T(ctxt(o,bc[cl]),c.cart.x,cy,Math.round(c.cart.sz*f),400,c.cart.col,'center',320);
+        T(fmt(bc[cl]),c.kg.x,cy,Math.round(c.kg.sz*f),c.kg.wt||700,c.kg.col,'center');
+        if(c.div&&i<n-1){g.fillStyle=c.div;g.fillRect(c.d0,y+rh,c.d1-c.d0,2)}})};
+    const photo=(x,y,w,hh)=>{if(ph){g.save();rr(x,y,w,hh,22);g.clip();cover(ph,x,y,w,hh);g.restore()}};
+    if(st.tpl==3){
+      g.fillStyle='#f7f5f2';g.fillRect(0,0,W,H);
+      T(o.client,W-100,150,88,700,INK,'right',W-520);T(fd(today()),W-100,232,30,700,INK,'right');
+      if(lg)g.drawImage(lg,100,80,140,104);T('التوحيد إيجيبت',100,215,30,700,AC,'left');
+      T('الصنف',W-100,340,26,700,INK,'right');T(o.item||'-',W-100,384,32,500,INK,'right',500);T('وزن الكرتونة: '+fmt(cw(o))+' كجم',W-100,428,26,400,MU,'right');
+      T('تاريخ التقرير',100,340,26,700,INK,'left');T(fd(today()),100,384,32,500,INK,'left');T('آخر تسجيل: '+fd(last(o)),100,428,26,400,MU,'left');
+      T('عدد الألوان',W-100,540,26,700,INK,'right');T(String(n),W-100,590,46,700,AC,'right');
+      T('إجمالي الكمية',100,540,26,700,INK,'left');T(fmt(tt)+' كجم',100,596,60,700,INK,'left');
+      g.fillStyle=AC;g.fillRect(100,670,W-200,2);T('اللون',W-100,708,24,700,AC,'right');T('الكراتين',560,708,24,700,AC,'center');T('الكمية (كجم)',230,708,24,700,AC,'center');g.fillRect(100,746,W-200,2);
+      rows({top:770,bot:1380,maxH:96,maxS:64,sw:{x:W-100},name:{sz:34,wt:700,col:INK},cart:{x:560,sz:28,col:'#5a4636'},kg:{x:230,sz:38,col:INK},div:'rgba(154,95,51,.18)',d0:100,d1:W-100});
+      g.fillStyle=AC;g.fillRect(100,1400,W-200,2);
+      T('إجمالي الكراتين',640,1452,26,700,INK,'right');T(String(ca.n),130,1452,28,700,INK,'left');T('إجمالي الكمية',640,1498,26,700,INK,'right');T(fmt(tt)+' كجم',130,1498,30,700,INK,'left');
+      g.fillStyle='#efe5da';g.fillRect(0,1566,W,H-1566);T('ملاحظات',W-100,1616,26,700,AC,'right');T(noteA,W-100,1664,22,400,INK,'right',W-560);photo(100,1590,240,140);
+    }else if(st.tpl==4){
+      const BE='#e9e2da';g.fillStyle='#fbfaf8';g.fillRect(0,0,W,H);
+      g.fillStyle=BE;g.beginPath();g.arc(W/2,170,84,0,7);g.fill();if(lg)g.drawImage(lg,W/2-56,129,112,83);
+      T(o.client,W/2,330,56,700,INK,'center',W-300);T(o.item||'',W/2,396,30,400,MU,'center',W-300);
+      T('بيانات الطلبية',W-110,500,26,700,INK,'right');T('الصنف: '+(o.item||'-'),W-110,545,28,400,INK,'right',520);T('عدد الألوان: '+n,W-110,588,28,400,INK,'right');T('وزن الكرتونة: '+fmt(cw(o))+' كجم',W-110,631,28,400,INK,'right');
+      T('تاريخ التقرير: '+fd(today()),110,545,28,400,INK,'left');T('آخر تسجيل: '+fd(last(o)),110,588,28,400,INK,'left');
+      g.fillStyle=BE;g.fillRect(80,720,W-160,66);T('اللون',W-110,753,26,700,INK,'right');T('الكراتين',560,753,26,700,INK,'center');T('الكمية (كجم)',230,753,26,700,INK,'center');
+      rows({top:810,bot:1360,maxH:92,maxS:56,round:1,sw:{x:W-110},name:{sz:32,wt:500,col:INK},cart:{x:560,sz:27,col:'#5a4636'},kg:{x:230,sz:34,wt:500,col:INK}});
+      T('إجمالي الكراتين',W-110,1410,28,700,INK,'right');T(String(ca.n),230,1410,30,700,INK,'center');
+      g.fillStyle=BE;g.fillRect(80,1450,W-160,72);T('الإجمالي',W-110,1486,30,700,INK,'right');T(fmt(tt)+' كجم',230,1486,36,700,INK,'center');
+      T('ملاحظات',W-110,1620,26,700,INK,'right');T(noteA,W-110,1668,23,400,MU,'right',W-560);photo(110,1590,240,140);
+    }else if(st.tpl==5){
+      g.fillStyle='#e8e4de';g.fillRect(0,0,W,H);g.fillStyle=AC;g.fillRect(0,0,W,560);
+      g.fillStyle='#f6eee3';g.beginPath();g.arc(W/2,120,66,0,7);g.fill();if(lg)g.drawImage(lg,W/2-46,86,92,68);
+      T(o.client,W/2,290,92,400,'#fff','center',W-240);T(o.item||'',W/2,380,36,400,'#f6e7d2','center',W-240);
+      g.fillStyle='#fbfaf8';g.fillRect(90,470,W-180,950);
+      T('الصنف: '+(o.item||'-'),W-140,525,28,500,INK,'right',500);T('عدد الألوان: '+n,W-140,580,28,400,MU,'right');
+      T('تاريخ التقرير: '+fd(today()),140,525,28,500,INK,'left');T('آخر تسجيل: '+fd(last(o)),140,580,28,400,MU,'left');
+      g.fillStyle='#e5ddd2';g.fillRect(140,640,W-280,2);
+      T('اللون',W-140,705,32,400,INK,'right');T('الكراتين',560,705,30,400,INK,'center');T('الكمية (كجم)',250,705,30,400,INK,'center');
+      rows({top:750,bot:1250,maxH:92,maxS:60,round:1,sw:{x:W-140},name:{sz:32,wt:500,col:INK},cart:{x:560,sz:27,col:'#5a4636'},kg:{x:250,sz:34,wt:500,col:INK}});
+      g.fillStyle='#e5ddd2';g.fillRect(140,1290,W-280,2);
+      T('إجمالي الكراتين',700,1335,26,400,MU,'right');T(String(ca.n),140,1335,30,700,INK,'left');T('الإجمالي',700,1385,32,400,INK,'right');T(fmt(tt)+' كجم',140,1385,44,700,AC,'left');
+      T('ملاحظات',W-90,1510,26,700,AC,'right');T(noteA,W-90,1558,23,400,INK,'right',W-500);photo(90,1490,240,150);
+    }else{
+      g.fillStyle='#fbfaf8';g.fillRect(0,0,W,H);
+      if(lg)g.drawImage(lg,100,80,130,96);T('التوحيد إيجيبت',100,205,28,700,INK,'left');
+      g.fillStyle='#e3b76c';rr(W-760,90,640,200,100);g.fill();g.fillStyle=AC;rr(W-640,90,700,200,100);g.fill();
+      T(o.client,W-110,150,56,700,'#fff','right',480);T(o.item||'',W-110,214,30,400,'#fbe9cf','right',480);T(fd(today()),W-110,258,24,400,'#fbe9cf','right');
+      T('عدد الألوان: '+n,100,400,30,500,INK,'left');T('وزن الكرتونة: '+fmt(cw(o))+' كجم',100,446,30,500,INK,'left');
+      const gp=g.createLinearGradient(W-100,0,100,0);gp.addColorStop(0,'#e3b76c');gp.addColorStop(1,'#cf9446');g.fillStyle=gp;rr(100,550,W-200,64,32);g.fill();g.fillStyle=AC;rr(W-460,550,360,64,32);g.fill();
+      T('اللون',W-140,582,26,700,'#fff','right');T('الكراتين',560,582,26,700,INK,'center');T('الكمية (كجم)',250,582,26,700,INK,'center');
+      rows({top:640,bot:1400,maxH:96,maxS:60,round:1,sw:{x:W-140},name:{sz:32,wt:700,col:INK},cart:{x:560,sz:27,col:'#5a4636'},kg:{x:250,sz:34,col:INK},div:'#f0dfb4',d0:100,d1:W-100});
+      T('إجمالي الكراتين',600,1470,28,500,INK,'right');T(String(ca.n),120,1470,30,700,INK,'left');
+      g.fillStyle='#e3b76c';rr(100,1520,500,76,38);g.fill();g.fillStyle=AC;rr(100,1520,230,76,38);g.fill();T(fmt(tt)+' كجم',215,1558,30,700,'#fff','center');T('الإجمالي',570,1558,30,700,INK,'right');photo(W-400,1450,300,190);
+    }
+    return new Promise(r=>cv.toBlob(r,'image/jpeg',.93))}
   if(st.tpl==2){
     const PA='#f6f0e4',ca=cartons(o),tt=total(o),days=new Set(o.entries.map(e=>e.d).filter(Boolean)).size,bt=470,bb=ph?1560:1690;
     g.fillStyle=PA;g.fillRect(0,0,W,H);
@@ -345,7 +407,7 @@ $('#ph').addEventListener('change',async e=>{const f=e.target.files[0];e.target.
 document.addEventListener('change',e=>{const t=e.target,o=st.eo&&byId(st.eo);if(!o)return;
   if(t.dataset.of){const k=t.dataset.of,v=t.value.trim();if(k=='client'||k=='item'){if(k=='client'&&!v)return toast('اسم العميل مطلوب',1);o[k]=v}else{const n=num(v);if(k=='cw')o.cw=n>0?n:null;else o.target=n>0?n:null}save();toast('تم الحفظ')}
   else if(t.dataset.cn){const a=t.dataset.cn,b=t.value.trim();if(!b||b==a){t.value=a;return}if(o.colors.includes(b)){t.value=a;return toast('اللون ده موجود',1)}o.colors[o.colors.indexOf(a)]=b;o.entries.forEach(en=>{if(a in en.q){en.q[b]=en.q[a];delete en.q[a]}});if(o.cp&&o.cp[a]){o.cp[b]=o.cp[a];delete o.cp[a]}t.dataset.cn=b;t.closest('.rowe').querySelectorAll('[data-k]').forEach(x=>x.dataset.k=b);save();toast('تم تغيير الاسم')}});
-try{st.tpl=+localStorage.getItem('tw-tpl')||2}catch(e){st.tpl=2}
+st.tpl=6
 document.addEventListener('change',e=>{if(e.target.id=='pn'){try{localStorage.setItem('tw-prep',e.target.value.trim())}catch(x){}toast('تم الحفظ')}});
 document.addEventListener('keydown',e=>{if((e.key=='Enter'||e.key==' ')&&e.target.matches('.card[data-act]')){e.preventDefault();e.target.click()}});
 render();pAll().then(m=>{P=m;render()});
