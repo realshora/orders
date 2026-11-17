@@ -148,7 +148,8 @@ function hexes(n){return n.split('*').map(s=>{s=s.replace(/\(\d+\)/g,'').trim();
 function hex(n){const p=hexes(n);return p.length>1?`linear-gradient(135deg,${p[0]} 50%,${p[1]} 50%)`:p[0]}
 const dot=n=>`<i class="dot" style="background:${hex(n)}"></i>`;
 const sw=(o,n,s=34)=>{const id=(o.cp||{})[n];return id&&P[id]?`<img class="cth" style="width:${s}px;height:${s}px" src="${P[id]}" alt="">`:`<i class="dot" style="background:${hex(n)};width:${Math.round(s*.6)}px;height:${Math.round(s*.6)}px;margin:auto"></i>`};
-function toast(m,err,undo){const t=$('#toast');t.textContent=m;if(undo){const b=document.createElement('button');b.textContent='تراجع';b.className='ub';b.onclick=()=>{undo();t.className=''};t.append(b)}t.className='show'+(err?' err':'');clearTimeout(t._t);t._t=setTimeout(()=>t.className='',undo?6000:2600)}
+function toast(m,err,undo){const t=$('#toast');t.textContent=m;if(undo){const b=document.createElement('button');b.textContent='تراجع';b.className='ub';b.onclick=()=>{undo();t.className=''};t.append(b)}t.className='show'+(err?' err':'');clearTimeout(t._t);t._t=setTimeout(()=>t.className='',undo?8000:2600)}
+function undoOrder(id,before,msg,gc,ix){let undone=false;toast(msg,0,()=>{undone=true;const i=S.findIndex(x=>x.id==id),o=JSON.parse(before);if(i>=0)S[i]=o;else S.splice(ix==null?S.length:Math.min(ix,S.length),0,o);save();render()});setTimeout(()=>{if(!undone)(gc||[]).forEach(pDel)},8500)}
 const num=v=>parseFloat(String(v).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[٫,،]/g,'.'));
 
 const icons={home:'<path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-5h4v5"/>',more:'<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',add:'<path d="M12 5v14M5 12h14"/>'};
@@ -207,7 +208,7 @@ ${o.photo&&P[o.photo]?`<img class="hero" src="${P[o.photo]}" alt="">`:''}
 <div class="two"><label>وزن الكرتونة (كجم)<input data-of="cw" inputmode="decimal" value="${cw(o)}"></label><label>الكمية المطلوبة (كجم)<input data-of="target" inputmode="decimal" value="${o.target||''}"></label></div>
 <div class="sec">الألوان (${o.colors.length})</div>
 ${o.colors.map(c=>{const has=(o.cp||{})[c]&&P[o.cp[c]];return `<div class="rowe">${sw(o,c,48)}<div><input data-cn="${esc(c)}" value="${esc(c)}"><small class="mut">${fmt(bc[c]||0)} كجم</small> <button class="ib" data-act="pic" data-id="${o.id}" data-k="${esc(c)}">${has?'تغيير الصورة':'إضافة صورة'}</button>${has?`<button class="ib del" data-act="unpic" data-id="${o.id}" data-k="${esc(c)}">حذف الصورة</button>`:''}</div><button class="ib del" data-act="delc" data-id="${o.id}" data-k="${esc(c)}">حذف اللون</button></div>`}).join('')}
-<button class="ghost" data-act="addc" data-id="${o.id}">+ إضافة لون</button><button class="pri" data-act="back">تم</button></main>`}
+<button class="ghost" data-act="addc" data-id="${o.id}">+ إضافة لون</button>${SEED.some(x=>x.id==o.id)?`<button class="ghost" data-act="rsto" data-id="${o.id}">إرجاع الطلبية لبيانات الشيت الأصلية</button>`:''}<button class="pri" data-act="back">تم</button></main>`}
 function repView(o){return `<header class="hd"><button class="back" data-act="back">رجوع</button><div class="row"><img src="logo.png" width="64" height="47" alt=""><div><h1>صورة التقرير</h1><p>${esc(o.client)}</p></div></div></header><main style="padding-top:18px">${st.rurl?`<img class="rep" src="${st.rurl}" alt="">`:'<div id="rbox" class="empty">جاري تجهيز الصورة…</div>'}<button class="pri" style="margin-top:0" data-act="rshare">مشاركة PDF (A4)</button><div class="two"><button class="wa" data-act="rpdf">حفظ PDF</button><button class="wa" data-act="rsave">حفظ كصورة</button></div></main>`}
 async function mkPdf(b){
   const u8=new Uint8Array(await b.arrayBuffer()),enc=new TextEncoder(),parts=[],off={};let len=0;
@@ -365,7 +366,7 @@ document.addEventListener('click',e=>{
     case 'addto':st.add={oid:d.id,date:today(),vals:{},eid:null};st.det=null;st.tab='add';go();break;
     case 'edit':{const en=o.entries.find(x=>x.id==d.e);st.add={oid:o.id,date:en.d||'',vals:{...en.q},eid:en.id};st.det=null;st.tab='add';go();break}
     case 'delE':{const en=o.entries.find(x=>x.id==d.e),ix=o.entries.indexOf(en);o.entries.splice(ix,1);save();render();toast('تم حذف التسجيل',0,()=>{o.entries.splice(Math.min(ix,o.entries.length),0,en);save();render()});break}
-    case 'delO':if(confirm('تحذف الطلبية كلها؟ مش هتقدر ترجعها.')){S=S.filter(x=>x.id!=o.id);save();st.det=null;go()}break;
+    case 'delO':{if(!confirm('تحذف الطلبية كلها؟ تقدر تتراجع خلال 8 ثواني.'))break;const ix=S.indexOf(o),before=JSON.stringify(o),gc=[o.photo,...Object.values(o.cp||{})].filter(Boolean);S.splice(ix,1);save();st.det=st.eo=null;go();undoOrder(o.id,before,'تم حذف الطلبية',gc,ix);break}
     case 'arch':o.archived=!o.archived;save();st.det=null;st.flt=o.archived?'z':'a';go();break;
     case 'target':{const v=prompt('الكمية المطلوبة بالكجم (سيبها فاضية للإلغاء)',o.target||'');if(v===null)break;const n=num(v);o.target=n>0?n:null;save();render();break}
     case 'wa':window.open('https://wa.me/?text='+encodeURIComponent(share(o)),'_blank');break;
@@ -384,9 +385,12 @@ document.addEventListener('click',e=>{
     case 'eo':st.eo=d.id;go();break;
     case 'rep':st.rep=d.id;st.blob=st.rurl=st.pdf=null;go();break;
     case 'pic':st.pk={id:d.id,k:d.k};$('#ph').click();break;
-    case 'unpic':{const k=d.k,old=k?(o.cp||{})[k]:o.photo;if(old)pDel(old);if(k)delete o.cp[k];else o.photo=null;save();render();break}
+    case 'unpic':{const k=d.k,old=k?(o.cp||{})[k]:o.photo,before=JSON.stringify(o);if(k)delete o.cp[k];else o.photo=null;save();render();undoOrder(o.id,before,'تم حذف الصورة',old?[old]:[]);break}
     case 'addc':{const n=(prompt('اسم اللون الجديد')||'').trim();if(!n)break;if(o.colors.includes(n))return toast('اللون موجود',1);o.colors.push(n);save();render();break}
-    case 'delc':{const k=d.k,kg=byColor(o)[k]||0;if(!confirm(kg?`حذف لون ${k}؟ هتتحذف كمياته (${fmt(kg)} كجم) من كل التسجيلات.`:`حذف لون ${k}؟`))break;o.colors=o.colors.filter(c=>c!=k);o.entries.forEach(en=>delete en.q[k]);o.entries=o.entries.filter(en=>Object.keys(en.q).length);if(o.cp&&o.cp[k]){pDel(o.cp[k]);delete o.cp[k]}save();render();break}
+    case 'delc':{const k=d.k,kg=byColor(o)[k]||0;if(kg&&!confirm(`حذف لون ${k}؟ هتتحذف كمياته (${fmt(kg)} كجم) من كل التسجيلات، وتقدر تتراجع خلال 8 ثواني.`))break;
+      const before=JSON.stringify(o),pid=(o.cp||{})[k];o.colors=o.colors.filter(c=>c!=k);o.entries.forEach(en=>delete en.q[k]);o.entries=o.entries.filter(en=>Object.keys(en.q).length);if(o.cp&&o.cp[k])delete o.cp[k];save();render();undoOrder(o.id,before,'تم حذف لون '+k,pid?[pid]:[]);break}
+    case 'rsto':{const s=SEED.find(x=>x.id==o.id);if(!s||!confirm('هترجع الطلبية لبيانات الشيت الأصلية. أي تسجيلات ضفتها بعد كده في الطلبية دي هتتمسح (تقدر تتراجع خلال 8 ثواني). تكمل؟'))break;
+      const before=JSON.stringify(o),ix=S.indexOf(o),n=JSON.parse(JSON.stringify(s));n.photo=o.photo;n.cp=o.cp;n.target=o.target;n.cw=o.cw;n.archived=o.archived;S[ix]=n;save();render();undoOrder(o.id,before,'تم إرجاع الطلبية من الشيت',[],ix);break}
     case 'rshare':case 'rpdf':case 'rsave':{const b=st.blob,r=byId(st.rep);if(!b)return toast('استنى التقرير يجهز',1);
       const dl=(x,n)=>{const a=document.createElement('a');a.href=URL.createObjectURL(x);a.download=n;a.click()},nm='تقرير-'+r.client.replace(/[^\w\u0600-\u06FF ]/g,'').trim();
       if(d.act=='rsave'){dl(b,nm+'.jpg');toast('تم حفظ الصورة');break}
@@ -397,7 +401,7 @@ document.addEventListener('click',e=>{
     case 'tpl':st.tpl=+d.t;try{localStorage.setItem('tw-tpl',st.tpl)}catch(x){}st.blob=st.rurl=st.pdf=null;render();break;
     case 'exp':{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({v:2,orders:S,photos:P})],{type:'application/json'}));a.download='tawheed-orders-backup-'+today()+'.json';a.click();toast('تم حفظ النسخة');break}
     case 'imp':$('#imp').click();break;
-    case 'reset':if(confirm('ده هيمسح كل تعديلاتك ويرجّع بيانات الشيت الأصلية. متأكد؟')){S=JSON.parse(JSON.stringify(SEED));save();st.tab='home';go()}break;
+    case 'reset':if(confirm('ده هيمسح كل تعديلاتك ويرجّع بيانات الشيت الأصلية. متأكد؟ (تقدر تتراجع خلال 8 ثواني)')){const before=JSON.stringify(S);S=JSON.parse(JSON.stringify(SEED));save();st.tab='home';go();toast('تم إرجاع بيانات الشيت',0,()=>{S=JSON.parse(before);save();go()})}break;
   }
 });
 document.addEventListener('change',e=>{if(e.target.id=='ao'||e.target.id=='ad'){const a=st.add;collect();if(e.target.id=='ao')a.vals={};render()}});
