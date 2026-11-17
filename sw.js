@@ -1,4 +1,4 @@
-const V='orders-v9',FILES=['./','index.html','data.js','manifest.json','logo.png','icon-192.png','icon-512.png','icon-maskable.png'];
+const V='orders-v10',FILES=['./','index.html','data.js','manifest.json','logo.png','icon-192.png','icon-512.png','icon-maskable.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{
