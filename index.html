@@ -205,7 +205,7 @@ function addView(){
   const a=st.add||(st.add={oid:(S.find(o=>!o.archived)||S[0]).id,date:today(),vals:{},eid:null});
   const o=S.find(x=>x.id==a.oid), ex=!a.eid&&a.date&&o.entries.find(e=>e.d==a.date);
   return head(a.eid?'تعديل تسجيل':'تسجيل تجهيز','اكتب الكمية اللي اتجهزت لكل لون')+`<main style="padding-top:20px">
-  <label>الطلبية<select id="ao">${S.filter(x=>!x.archived||x.id==a.oid).map(x=>`<option value="${x.id}" ${x.id==a.oid?'selected':''}>⁨${esc(x.client)}⁩ - ⁨${esc(x.item)}⁩</option>`).join('')}</select></label>
+  <label>الطلبية<select id="ao" ${a.eid?'disabled':''}>${S.filter(x=>!x.archived||x.id==a.oid).map(x=>`<option value="${x.id}" ${x.id==a.oid?'selected':''}>⁨${esc(x.client)}⁩ - ⁨${esc(x.item)}⁩</option>`).join('')}</select></label>
   <label>التاريخ<input type="date" id="ad" value="${a.date||''}"></label>
   ${ex?`<div class="hint">فيه تسجيل بنفس اليوم (${fmt(sum(ex.q))} كجم)، والكميات الجديدة هتتجمع عليه. <button class="ib" data-act="edit" data-id="${o.id}" data-e="${ex.id}">تعديل التسجيل بدل الجمع</button></div>`:''}
   ${o.colors.map(c=>`<div class="crow">${dot(c)}<span>${esc(c)}</span><input inputmode="decimal" data-c="${esc(c)}" aria-label="كمية ${esc(c)} بالكجم" placeholder="0" value="${a.vals[c]??''}"><em>كجم</em></div>`).join('')}
@@ -388,7 +388,7 @@ document.addEventListener('click',e=>{
     case 'saveA':{collect();const a=st.add,x=byId(a.oid),q={};for(const c in a.vals){const n=num(a.vals[c]);if(n>0)q[c]=Math.round(n*100)/100}
       if(!Object.keys(q).length)return toast('اكتب كمية للون واحد على الأقل',1);
       if(!a.date)return toast('اختار التاريخ',1);
-      if(a.eid){const en=x.entries.find(y=>y.id==a.eid);en.q=q;en.d=a.date}
+      if(a.eid){const en=x.entries.find(y=>y.id==a.eid);if(!en)return toast('التسجيل ده اتحذف أو اتنقل، افتحه تاني من الطلبية',1);en.q=q;en.d=a.date}
       else{const en=x.entries.find(y=>y.d==a.date);if(en){for(const c in q)en.q[c]=Math.round(((en.q[c]||0)+q[c])*100)/100}else x.entries.push({id:'e'+Date.now(),d:a.date,q})}
       save();const msg='تم تسجيل '+Object.keys(q).map(c=>fmt(q[c])+' كجم '+c).join('، ')+' في '+x.client;
       if(a.eid){st.add=null;st.det=x.id;go()}else{st.add={oid:a.oid,date:a.date,vals:{},eid:null};render();window.scrollTo(0,0)}toast(msg);break}
