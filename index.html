@@ -237,7 +237,7 @@ const prepName=()=>{try{return localStorage.getItem('tw-prep')||'أحمد سام
 async function makeRep(o){
   try{await Promise.all(['400','500','700'].map(w=>document.fonts.load(w+' 30px "El Messiri"','ابAb1')))}catch(e){}
   const W=1240,H=1754,bc=byColor(o),cs=o.colors.filter(c=>bc[c]>0),n=cs.length,L=s=>new Promise(r=>{if(!s)return r(null);const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=s});
-  const [lg,ph,...cp]=await Promise.all([L('logo.png'),L(o.photo&&P[o.photo]),...cs.map(c=>L((o.cp||{})[c]&&P[o.cp[c]]))]);
+  const [lg,ph,...cp]=await Promise.all([L(st.tpl===6?'report-logo.png':'logo.png'),L(o.photo&&P[o.photo]),...cs.map(c=>L((o.cp||{})[c]&&P[o.cp[c]]))]);
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');g.direction='rtl';g.textBaseline='middle';
   const DK='#4a2812',BR='#7a4a2e',GD='#c79a5a',GY='#e3c08a',CR='#f7f0e6',CD='#fffaf2',LN='#e2d5c1',MU='#8a7563';
   const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
@@ -248,7 +248,7 @@ async function makeRep(o){
     const rows=c=>{const rh=Math.min(c.maxH,(c.bot-c.top)/Math.max(n,1)),f=Math.max(.7,Math.min(1,rh/90)),s=Math.min(c.maxS,rh-16);
       cs.forEach((cl,i)=>{const y=c.top+i*rh,cy=y+rh/2,sx=c.sw.x-s,sy=cy-s/2,path=()=>{if(c.round){g.beginPath();g.arc(sx+s/2,cy,s/2,0,7)}else rr(sx,sy,s,s,14)};
         g.save();path();g.clip();if(cp[i])cover(cp[i],sx,sy,s,s);else{const q=hexes(cl);g.fillStyle=q[0];g.fillRect(sx,sy,s,s);if(q[1]){g.fillStyle=q[1];g.fillRect(sx+s/2,sy,s/2,s)}}g.restore();
-        g.strokeStyle='rgba(60,40,20,.25)';g.lineWidth=2;path();g.stroke();
+        g.strokeStyle=st.tpl===6?'#aaa':'rgba(60,40,20,.25)';g.lineWidth=2;path();g.stroke();
         T(cl,sx-18,cy,Math.round(c.name.sz*f),c.name.wt,c.name.col,'right',380);
         T(ctxt(o,bc[cl]),c.cart.x,cy,Math.round(c.cart.sz*f),400,c.cart.col,'center',320);
         T(fmt(bc[cl]),c.kg.x,cy,Math.round(c.kg.sz*f),c.kg.wt||700,c.kg.col,'center');
@@ -292,16 +292,37 @@ async function makeRep(o){
       T('إجمالي الكراتين',700,1335,26,400,MU,'right');T(String(ca.n),140,1335,30,700,INK,'left');T('الإجمالي',700,1385,32,400,INK,'right');T(fmt(tt)+' كجم',140,1385,44,700,AC,'left');
       T('ملاحظات',W-90,1510,26,700,AC,'right');T(noteA,W-90,1558,23,400,INK,'right',W-500);photo(90,1490,240,150);
     }else{
-      g.fillStyle='#fbfaf8';g.fillRect(0,0,W,H);
-      if(lg)g.drawImage(lg,100,80,130,96);T('التوحيد إيجيبت',100,205,28,700,INK,'left');
-      g.fillStyle='#e3b76c';rr(W-760,90,640,200,100);g.fill();g.fillStyle=AC;rr(W-640,90,700,200,100);g.fill();
-      T(o.client,W-110,150,56,700,'#fff','right',480);T(o.item||'',W-110,214,30,400,'#fbe9cf','right',480);T(fd(today()),W-110,258,24,400,'#fbe9cf','right');
-      T('عدد الألوان: '+n,100,400,30,500,INK,'left');T('وزن الكرتونة: '+fmt(cw(o))+' كجم',100,446,30,500,INK,'left');
-      const gp=g.createLinearGradient(W-100,0,100,0);gp.addColorStop(0,'#e3b76c');gp.addColorStop(1,'#cf9446');g.fillStyle=gp;rr(100,550,W-200,64,32);g.fill();g.fillStyle=AC;rr(W-460,550,360,64,32);g.fill();
-      T('اللون',W-140,582,26,700,'#fff','right');T('الكراتين',560,582,26,700,INK,'center');T('الكمية (كجم)',250,582,26,700,INK,'center');
-      rows({top:640,bot:1400,maxH:96,maxS:60,round:1,sw:{x:W-140},name:{sz:32,wt:700,col:INK},cart:{x:560,sz:27,col:'#5a4636'},kg:{x:250,sz:34,col:INK},div:'#f0dfb4',d0:100,d1:W-100});
-      T('إجمالي الكراتين',600,1470,28,500,INK,'right');T(String(ca.n),120,1470,30,700,INK,'left');
-      g.fillStyle='#e3b76c';rr(100,1520,500,76,38);g.fill();g.fillStyle=AC;rr(100,1520,230,76,38);g.fill();T(fmt(tt)+' كجم',215,1558,30,700,'#fff','center');T('الإجمالي',570,1558,30,700,INK,'right');photo(W-400,1450,300,190);
+      const WHITE='#1c1c1c',SOFT='#686868',CARD='#f0f0ee';
+      g.fillStyle='#fff';g.fillRect(0,0,W,H);
+      if(lg){const lw=184,lh=lw*lg.height/lg.width;g.drawImage(lg,W-281,68,lw,lh)}
+      T('تقرير التجهيز',100,106,30,500,SOFT,'left');
+      T(fd(today()),100,160,28,400,SOFT,'left');
+      // Separate title canvas allows a real lower-edge blur and alpha fade.
+      const title=document.createElement('canvas');title.width=W;title.height=180;
+      const tg=title.getContext('2d');tg.direction='rtl';tg.textBaseline='middle';tg.textAlign='center';
+      tg.font="700 112px 'El Messiri',Tajawal,sans-serif";tg.fillStyle=WHITE;tg.fillText(o.client,W/2,90,W-180);
+      // The card cuts through the lower title. The obscured part appears blurred through its top edge.
+      const edge=330;
+      g.save();g.beginPath();g.rect(0,0,W,edge);g.clip();g.drawImage(title,0,230);g.restore();
+      g.fillStyle=CARD;rr(80,edge,W-160,276,26);g.fill();
+      g.save();rr(80,edge,W-160,276,26);g.clip();
+      const ghost=document.createElement('canvas');ghost.width=W;ghost.height=210;const gg=ghost.getContext('2d');
+      gg.filter='blur(7px)';gg.drawImage(title,0,10);gg.filter='none';gg.globalCompositeOperation='destination-in';
+      const reflection=gg.createLinearGradient(0,98,0,165);reflection.addColorStop(0,'rgba(0,0,0,.6)');reflection.addColorStop(1,'rgba(0,0,0,0)');gg.fillStyle=reflection;gg.fillRect(0,0,W,210);
+      g.drawImage(ghost,0,230);g.restore();
+      T(o.item||'',W/2,432,34,400,SOFT,'center',W-240);
+      T('عدد الألوان',W-120,504,26,400,SOFT,'right');T(String(n),W-120,559,38,700,WHITE,'right');
+      if(ph){const scale=Math.min(200/ph.width,112/ph.height);g.drawImage(ph,W/2-ph.width*scale/2,530-ph.height*scale/2,ph.width*scale,ph.height*scale)}
+      T('وزن الكرتونة',120,504,26,400,SOFT,'left');T(fmt(cw(o))+' كجم',120,559,38,700,WHITE,'left');
+      g.fillStyle=CARD;rr(80,634,W-160,784,28);g.fill();
+      T('اللون',W-120,680,26,500,SOFT,'right');T('الكراتين',560,680,26,500,SOFT,'center');T('الكمية (كجم)',240,680,26,500,SOFT,'center');
+      g.fillStyle='#ccc';g.fillRect(120,718,W-240,1);
+      rows({top:740,bot:1390,maxH:80,maxS:46,round:1,sw:{x:W-120},name:{sz:32,wt:500,col:WHITE},cart:{x:560,sz:26,col:SOFT},kg:{x:240,sz:36,wt:500,col:WHITE},div:'#d5d5d2',d0:120,d1:W-120});
+      g.fillStyle=CARD;rr(80,1450,W-160,86,26);g.fill();
+      T('إجمالي الكراتين',W-120,1493,30,500,WHITE,'right');T(String(ca.n),240,1493,40,700,WHITE,'center');
+      g.fillStyle='#1c1c1c';rr(80,1558,W-160,104,26);g.fill();
+      T('الإجمالي',W-120,1610,36,700,'#fff','right');T(fmt(tt)+' كجم',240,1610,48,700,'#fff','center');
+
     }
     return new Promise(r=>cv.toBlob(r,'image/jpeg',.93))}
   if(st.tpl==2){
